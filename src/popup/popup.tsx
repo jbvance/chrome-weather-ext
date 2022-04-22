@@ -1,15 +1,20 @@
-import React from 'react'
-import ReactDOM from 'react-dom'
-import './popup.css'
+import React from 'react';
+import ReactDOM from 'react-dom';
+import 'fontsource-roboto';
+import WeatherCard from './WeatherCard';
+import { fetchOpenWeatherData, OpenWeatherData } from '../utils/api';
+import './popup.css';
 
 const App: React.FC<{}> = () => {
   return (
-    <div>
-      <img src="icon.png" />
-    </div>
-  )
-}
+    <>
+      <WeatherCard city="Toronto" />
+      <WeatherCard city="New York" />
+      <WeatherCard city="Error" />
+    </>
+  );
+};
 
-const root = document.createElement('div')
-document.body.appendChild(root)
-ReactDOM.render(<App />, root)
+const root = document.createElement('div');
+document.body.appendChild(root);
+ReactDOM.render(<App />, root);
