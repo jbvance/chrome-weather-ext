@@ -1,26 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { Box, Grid, InputBase, IconButton, Paper } from '@material-ui/core';
-import { Add as AddIcon } from '@material-ui/icons';
+import {
+  Add as AddIcon,
+  PictureInPicture as PictureInPictureIcon
+} from '@material-ui/icons';
 import 'fontsource-roboto';
 
-import WeatherCard from './WeatherCard';
+import WeatherCard from '../components/WeatherCard';
 import { fetchOpenWeatherData, OpenWeatherData } from '../utils/api';
-import { getStoredCities, setStoredCities } from '../utils/storage';
+import {
+  getStoredCities,
+  setStoredCities,
+  getStoredOptions,
+  setStoredOptions,
+  LocalStorageOptions
+} from '../utils/storage';
+import { Messages } from '../utils/messages';
 import './popup.css';
 
 const App: React.FC<{}> = () => {
   const [cities, setCities] = useState<string[]>([]);
-
+  const [options, setOptions] = useState<LocalStorageOptions | null>(null);
   const [cityInput, setCityInput] = useState<string>('');
 
   useEffect(() => {
-    const getCities = async () => {
-      const storedCities = await getStoredCities();
-      setCities(storedCities);
-    };
-
-    getCities();
+    getStoredCities().then((cities) => setCities(cities));
+    getStoredOptions().then((options) => setOptions(options));
   }, []);
 
   const handleCityButtonClick = () => {
@@ -42,9 +48,36 @@ const App: React.FC<{}> = () => {
     });
   };
 
+  const handleTempScaleButtonClick = () => {
+    const updatedOptions: LocalStorageOptions = {
+      ...options,
+      tempScale: options.tempScale === 'metric' ? 'imperial' : 'metric'
+    };
+    setStoredOptions(updatedOptions).then(() => {
+      setOptions(updatedOptions);
+    });
+  };
+
+  const handleOverlayButtonClick = () => {
+    chrome.tabs.query(
+      {
+        active: true
+      },
+      (tabs) => {
+        if (tabs.length > 0) {
+          chrome.tabs.sendMessage(tabs[0].id, Messages.TOGGLE_OVERLAY);
+        }
+      }
+    );
+  };
+
+  if (!options) {
+    return null;
+  }
+
   return (
     <Box mx="8px" my="16px">
-      <Grid container>
+      <Grid container justify="space-evenly">
         <Grid item>
           <Paper>
             <Box px="15px" py="5px">
@@ -59,11 +92,33 @@ const App: React.FC<{}> = () => {
             </Box>
           </Paper>
         </Grid>
+        <Grid item>
+          <Paper>
+            <Box py="4px">
+              <IconButton onClick={handleTempScaleButtonClick}>
+                {options.tempScale === 'metric' ? '\u2103' : '\u2109'}
+              </IconButton>
+            </Box>
+          </Paper>
+        </Grid>
+        <Grid item>
+          <Paper>
+            <Box py="4px">
+              <IconButton onClick={handleOverlayButtonClick}>
+                <PictureInPictureIcon />
+              </IconButton>
+            </Box>
+          </Paper>
+        </Grid>
       </Grid>
+      {options.homeCity != '' && (
+        <WeatherCard city={options.homeCity} tempScale={options.tempScale} />
+      )}
 
       {cities.map((city, index) => (
         <WeatherCard
           city={city}
+          tempScale={options.tempScale}
           key={index}
           onDelete={() => handleCityDeleteButtonClick(index)}
         />
